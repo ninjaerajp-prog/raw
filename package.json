@@ -3,13 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "description": "Simple text logger with user registration and admin approval",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node server/index.js",
     "client": "npm run dev --prefix client",
-    "build": "npm run build --prefix client",
+    "build": "npm install --prefix client --include=dev && npm run build --prefix client",
     "start": "node server/index.js",
-    "install:all": "npm install && npm install --prefix client"
+    "install:all": "npm install && npm install --prefix client --include=dev"
+  },
+  "allowScripts": {
+    "better-sqlite3": true
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
