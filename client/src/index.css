@@ -564,7 +564,11 @@ code {
 }
 
 .fs-row-file {
-  cursor: default;
+  cursor: pointer;
+}
+
+.fs-row-file:hover .fs-name {
+  color: var(--accent-hover);
 }
 
 .fs-twist {
@@ -593,6 +597,52 @@ code {
 .fs-icon {
   flex: 0 0 auto;
   display: block;
+}
+
+.fs-tree-wrap {
+  position: relative;
+}
+
+.fs-context-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 140px;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.fs-context-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  padding: 0.45rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.fs-context-item:hover {
+  background: rgba(61, 154, 122, 0.18);
+}
+
+.fs-toast {
+  position: sticky;
+  bottom: 0.5rem;
+  margin: 0.75rem 0.5rem 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(61, 154, 122, 0.4);
+  background: rgba(26, 34, 44, 0.95);
+  color: #8fd4b8;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  word-break: break-all;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 @media (max-width: 700px) {
