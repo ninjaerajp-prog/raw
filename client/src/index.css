@@ -630,6 +630,14 @@ code {
   background: rgba(61, 154, 122, 0.18);
 }
 
+.fs-context-item-danger {
+  color: #f0a0a0;
+}
+
+.fs-context-item-danger:hover {
+  background: rgba(212, 101, 101, 0.18);
+}
+
 .fs-toast {
   position: sticky;
   bottom: 0.5rem;

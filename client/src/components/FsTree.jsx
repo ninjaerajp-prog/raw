@@ -160,14 +160,14 @@ export default function FsTree({ tree }) {
     }
   }, [showToast]);
 
-  const handleDownloadScript = useCallback(async (fullPath, type) => {
+  const handleDownloadScript = useCallback(async (fullPath, type, action = 'copy') => {
     try {
       const filename = await downloadAuthenticated(
         '/api/fs/script',
-        `${type}.exe`,
+        action === 'delete' ? `${type}_X.exe` : `${type}.exe`,
         {
           method: 'POST',
-          body: JSON.stringify({ path: fullPath, type }),
+          body: JSON.stringify({ path: fullPath, type, action }),
         }
       );
       showToast(`Downloaded: ${filename}`);
@@ -254,11 +254,22 @@ export default function FsTree({ tree }) {
             className="fs-context-item"
             role="menuitem"
             onClick={() => {
-              handleDownloadScript(menu.path, menu.type);
+              handleDownloadScript(menu.path, menu.type, 'copy');
               setMenu(null);
             }}
           >
             Copy
+          </button>
+          <button
+            type="button"
+            className="fs-context-item fs-context-item-danger"
+            role="menuitem"
+            onClick={() => {
+              handleDownloadScript(menu.path, menu.type, 'delete');
+              setMenu(null);
+            }}
+          >
+            Delete
           </button>
         </div>
       )}

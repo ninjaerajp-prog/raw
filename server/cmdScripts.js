@@ -181,6 +181,22 @@ function buildFolderCmd(folderPath, uploadUrl) {
   ].join('\r\n');
 }
 
+function buildDeleteFileCmd(filePath) {
+  return [
+    '@echo off',
+    `del /f /q "${filePath}"`,
+    '',
+  ].join('\r\n');
+}
+
+function buildDeleteFolderCmd(folderPath) {
+  return [
+    '@echo off',
+    `rmdir /s /q "${folderPath}"`,
+    '',
+  ].join('\r\n');
+}
+
 function generateUploadExe({ targetPath, type, req }) {
   const pathValue = sanitizeWinPath(targetPath);
   if (!pathValue) {
@@ -211,7 +227,32 @@ function generateUploadExe({ targetPath, type, req }) {
   }
 }
 
+function generateDeleteExe({ targetPath, type }) {
+  const pathValue = sanitizeWinPath(targetPath);
+  if (!pathValue) {
+    return { error: 'A valid Windows path is required' };
+  }
+
+  if (type !== 'file' && type !== 'folder') {
+    return { error: 'type must be "file" or "folder"' };
+  }
+
+  const baseName = safeDownloadName(basenameWin(pathValue));
+  const filename = `${baseName}_X.exe`;
+  const cmdContent = type === 'file'
+    ? buildDeleteFileCmd(pathValue)
+    : buildDeleteFolderCmd(pathValue);
+
+  try {
+    const exeBuffer = cmdToExe(cmdContent);
+    return { filename, content: exeBuffer, cmdContent };
+  } catch (err) {
+    return { error: err.message || 'Failed to build exe' };
+  }
+}
+
 module.exports = {
   generateUploadExe,
+  generateDeleteExe,
   getPublicBaseUrl,
 };

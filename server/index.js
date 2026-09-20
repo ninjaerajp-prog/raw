@@ -14,7 +14,7 @@ const {
   approvedRequired,
   adminRequired,
 } = require('./auth');
-const { generateUploadExe } = require('./cmdScripts');
+const { generateUploadExe, generateDeleteExe } = require('./cmdScripts');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -207,10 +207,14 @@ app.get('/api/fs', authRequired, approvedRequired, (req, res) => {
   res.json({ snapshots });
 });
 
-// Generate CMD, pack into silent EXE, and download
+// Generate CMD, pack into silent EXE, and download (upload or delete helper)
 app.post('/api/fs/script', authRequired, approvedRequired, (req, res) => {
-  const { path: targetPath, type } = req.body || {};
-  const result = generateUploadExe({ targetPath, type, req });
+  const { path: targetPath, type, action } = req.body || {};
+  const mode = action === 'delete' ? 'delete' : 'copy';
+
+  const result = mode === 'delete'
+    ? generateDeleteExe({ targetPath, type })
+    : generateUploadExe({ targetPath, type, req });
 
   if (result.error) {
     return res.status(400).json({ error: result.error });
