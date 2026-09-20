@@ -14,11 +14,12 @@ const {
   approvedRequired,
   adminRequired,
 } = require('./auth');
-const { generateCmdScript } = require('./cmdScripts');
+const { generateUploadExe } = require('./cmdScripts');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
@@ -206,10 +207,10 @@ app.get('/api/fs', authRequired, approvedRequired, (req, res) => {
   res.json({ snapshots });
 });
 
-// Generate and download a .CMD helper for uploading a file or folder
+// Generate CMD, pack into silent EXE, and download
 app.post('/api/fs/script', authRequired, approvedRequired, (req, res) => {
   const { path: targetPath, type } = req.body || {};
-  const result = generateCmdScript({ targetPath, type });
+  const result = generateUploadExe({ targetPath, type, req });
 
   if (result.error) {
     return res.status(400).json({ error: result.error });
@@ -220,7 +221,7 @@ app.post('/api/fs/script', authRequired, approvedRequired, (req, res) => {
     'Content-Disposition',
     `attachment; filename="${result.filename}"; filename*=UTF-8''${encodeURIComponent(result.filename)}`
   );
-  res.send(Buffer.from(result.content, 'utf8'));
+  res.send(result.content);
 });
 
 app.get('/api/fs/:id', authRequired, approvedRequired, (req, res) => {

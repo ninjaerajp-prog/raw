@@ -164,7 +164,7 @@ export default function FsTree({ tree }) {
     try {
       const filename = await downloadAuthenticated(
         '/api/fs/script',
-        `${type}.CMD`,
+        `${type}.exe`,
         {
           method: 'POST',
           body: JSON.stringify({ path: fullPath, type }),
