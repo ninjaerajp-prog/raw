@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { downloadAuthenticated } from '../api';
 import { FileTypeIcon } from './FileTypeIcon';
 
 function isNode(value) {
@@ -78,7 +79,7 @@ function FolderNode({
         className="fs-row"
         style={{ paddingLeft: `${0.35 + depth * 0.9}rem` }}
         onClick={() => hasChildren && setOpen((v) => !v)}
-        onContextMenu={(e) => onContextMenu(e, path)}
+        onContextMenu={(e) => onContextMenu(e, path, 'folder')}
         aria-expanded={hasChildren ? open : undefined}
         title={path}
       >
@@ -117,7 +118,7 @@ function FolderNode({
                   className="fs-row fs-row-file"
                   style={{ paddingLeft: `${0.35 + (depth + 1) * 0.9}rem` }}
                   onClick={() => onCopyPath(filePath)}
-                  onContextMenu={(e) => onContextMenu(e, filePath)}
+                  onContextMenu={(e) => onContextMenu(e, filePath, 'file')}
                   title={`Click to copy: ${filePath}`}
                 >
                   <span className="fs-twist fs-twist-empty" />
@@ -147,7 +148,7 @@ export default function FsTree({ tree }) {
   const showToast = useCallback((message) => {
     setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(''), 1600);
+    toastTimer.current = setTimeout(() => setToast(''), 1800);
   }, []);
 
   const handleCopyPath = useCallback(async (fullPath) => {
@@ -159,13 +160,30 @@ export default function FsTree({ tree }) {
     }
   }, [showToast]);
 
-  const handleContextMenu = useCallback((event, fullPath) => {
+  const handleDownloadScript = useCallback(async (fullPath, type) => {
+    try {
+      const filename = await downloadAuthenticated(
+        '/api/fs/script',
+        `${type}.CMD`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ path: fullPath, type }),
+        }
+      );
+      showToast(`Downloaded: ${filename}`);
+    } catch (err) {
+      showToast(err.message || 'Failed to download script');
+    }
+  }, [showToast]);
+
+  const handleContextMenu = useCallback((event, fullPath, type) => {
     event.preventDefault();
     event.stopPropagation();
     setMenu({
       x: event.clientX,
       y: event.clientY,
       path: fullPath,
+      type,
     });
   }, []);
 
@@ -236,7 +254,7 @@ export default function FsTree({ tree }) {
             className="fs-context-item"
             role="menuitem"
             onClick={() => {
-              handleCopyPath(menu.path);
+              handleDownloadScript(menu.path, menu.type);
               setMenu(null);
             }}
           >
