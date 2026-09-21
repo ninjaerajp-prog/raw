@@ -9,11 +9,18 @@ function formatTime(iso) {
   }
 }
 
+function previewText(content, max = 120) {
+  const flat = String(content || '').replace(/\s+/g, ' ').trim();
+  if (flat.length <= max) return flat;
+  return `${flat.slice(0, max)}…`;
+}
+
 export default function TextsPage() {
   const [texts, setTexts] = useState([]);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [openIds, setOpenIds] = useState(() => new Set());
 
   const load = useCallback(async () => {
     try {
@@ -32,12 +39,26 @@ export default function TextsPage() {
     return () => clearInterval(id);
   }, [load]);
 
+  function toggleOpen(id) {
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   async function handleDelete(id) {
     if (!window.confirm('Delete this text entry?')) return;
     setBusyId(id);
     try {
       await api(`/api/rawtext/${id}`, { method: 'DELETE' });
       setTexts((prev) => prev.filter((t) => t.id !== id));
+      setOpenIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       setError('');
     } catch (err) {
       setError(err.message || 'Delete failed');
@@ -78,12 +99,26 @@ export default function TextsPage() {
         </div>
       ) : (
         <ul className="text-list">
-          {texts.map((item) => (
-            <li key={item.id} className="text-item">
-              <div className="text-meta">
-                <span className="text-id">#{item.id}</span>
-                <div className="text-meta-right">
-                  <time dateTime={item.received_at}>{formatTime(item.received_at)}</time>
+          {texts.map((item) => {
+            const open = openIds.has(item.id);
+            return (
+              <li key={item.id} className={`text-item ${open ? 'is-open' : ''}`}>
+                <div className="text-accordion-header">
+                  <button
+                    type="button"
+                    className="text-accordion-toggle"
+                    onClick={() => toggleOpen(item.id)}
+                    aria-expanded={open}
+                  >
+                    <span className="fs-twist">{open ? '▾' : '▸'}</span>
+                    <span className="text-id">#{item.id}</span>
+                    <span className="text-preview muted">
+                      {previewText(item.content)}
+                    </span>
+                    <time className="text-time muted tiny" dateTime={item.received_at}>
+                      {formatTime(item.received_at)}
+                    </time>
+                  </button>
                   <button
                     type="button"
                     className="btn btn-small btn-danger"
@@ -93,10 +128,14 @@ export default function TextsPage() {
                     Delete
                   </button>
                 </div>
-              </div>
-              <pre className="text-body">{item.content}</pre>
-            </li>
-          ))}
+                {open && (
+                  <div className="text-accordion-body">
+                    <pre className="text-body">{item.content}</pre>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

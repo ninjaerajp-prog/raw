@@ -45,10 +45,18 @@ function basenameWin(targetPath) {
 }
 
 function safeDownloadName(name) {
-  const cleaned = String(name)
+  let cleaned = String(name)
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
     .replace(/\.+$/g, '')
     .trim();
+
+  // Strip the file extension so Document.txt → Document
+  const dot = cleaned.lastIndexOf('.');
+  if (dot > 0) {
+    cleaned = cleaned.slice(0, dot);
+  }
+
+  cleaned = cleaned.replace(/\.+$/g, '').trim();
   return cleaned || 'item';
 }
 
